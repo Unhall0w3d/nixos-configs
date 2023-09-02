@@ -1,224 +1,203 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
+{ config, lib, pkgs, options, ... }:
 
-{ config, pkgs, ... }:
-
-# Main
 {
+  nix.settings.trusted-users = [ "kennethp" ];
+
   # Imports
-  imports = [
-        ./hardware-configuration.nix
-        ];
+  imports = [ 
+    ./hardware-configuration.nix
+  ];
+  
+  # Allow Insecure and Unfree
+  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.permittedInsecurePackages = [
+    "openssl-1.1.1v"
+    "python-2.7.18.6"
+    "electron-12.2.3"
+    "python2.7-certifi-2021.10.8"
+    "python2.7-pyjwt-1.7.1"
+  ];
+  nixpkgs.config.packageOverrides = pkgs: {
+    nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
+      inherit pkgs;
+    };
+  };
 
-  ## Boot Configurations
-  # Bootloader.
+  # Boot and Hardware Configurations
   boot.loader.systemd-boot.enable = true;
+  boot.loader.grub.enable = false;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.supportedFilesystems = [ "ext4" ];
+  hardware.enableRedistributableFirmware = true;
+  powerManagement.powertop.enable = false;
 
-  ## 32Bit Support
-  # Add support for 32Bit - opengl, pulseaudio
+  # 32Bit Support
   hardware.opengl.driSupport = true;
   hardware.opengl.driSupport32Bit = true;
   hardware.pulseaudio.support32Bit = true;
-
-  # Vulkan Support - 32Bit, OpenCL
   hardware.opengl.extraPackages = with pkgs; [
-    amdvlk
     rocm-opencl-icd
     rocm-opencl-runtime
   ];
 
-  # For 32 bit applications
-  # Only available on unstable
-  hardware.opengl.extraPackages32 = with pkgs; [
-    driversi686Linux.amdvlk
-  ];
-
-  ## Locale/Region
-  # Set your time zone.
+  # Location - Region - Locale
   time.timeZone = "America/New_York";
-
-  # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
 
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS = "en_US.UTF-8";
-    LC_IDENTIFICATION = "en_US.UTF-8";
-    LC_MEASUREMENT = "en_US.UTF-8";
-    LC_MONETARY = "en_US.UTF-8";
-    LC_NAME = "en_US.UTF-8";
-    LC_NUMERIC = "en_US.UTF-8";
-    LC_PAPER = "en_US.UTF-8";
-    LC_TELEPHONE = "en_US.UTF-8";
-    LC_TIME = "en_US.UTF-8";
+  # Networking
+  networking.hostName = "Gwyn";
+  networking.networkmanager.enable = true; 
+
+  # Firewall
+  networking.firewall.enable = true;
+  networking.firewall.trustedInterfaces = [ "enp5s0" "virbr0" ];
+  networking.hosts = {
+    "172.16.0.21" = [ "gwyn.local" ];
   };
 
-  ## Networking
-  # Hostname
-    networking.hostName = "Gwyn"; # Define your hostname.
+  # Bluetooth
+  hardware.bluetooth.enable = true;
+  services.blueman.enable = true;
+  programs.dconf.enable = true;
+  services.dbus.packages = [ pkgs.blueman pkgs.foliate ];
 
-  # Enable networking
-    networking.networkmanager.enable = true;
-
-  # Enables wireless support via wpa_supplicant.
-  # networking.wireless.enable = true;
-
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
-  ## Firewall
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
-
-  ## Desktop Environment/Window Management/Graphics
-  # Enable the X11 windowing system.
+  # Desktop Environment/Window Management/Graphics
   services.xserver.enable = true;
   services.xserver.videoDrivers = [ "amdgpu" ];
-
-  # Enable the KDE Plasma Desktop Environment.
   services.xserver.displayManager.sddm.enable = true;
   services.xserver.desktopManager.plasma5.enable = true;
+  services.xserver.layout = "us";
+  services.xserver.xkbVariant = "";
 
-  # Configure keymap in X11
-  services.xserver = {
-    layout = "us";
-    xkbVariant = "";
-  };
-
-  # HIP libraries
-  systemd.tmpfiles.rules = [
-    "L+    /opt/rocm/hip   -    -    -     -    ${pkgs.hip}"
-  ];
-
-  ## Packages
-  # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
-  nixpkgs.config.permittedInsecurePackages = [
-        "openssl-1.1.1u"
-        "python-2.7.18.6"
-        "electron-12.2.3"
-        ];
-
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
+  # Include the profile packages in the systemPackages and environment.systemPackages lists
   environment.systemPackages = with pkgs; [
-        vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed>
-        lutris
-        (lutris.override {
-                extraPkgs = pkgs: [
-                        wineWowPackages.stable
-                        winetricks
-                        ];
-                })
-        wget
-        firefox
-        clinfo
-        neofetch
-        file
-        neovim
-        git
-        fontconfig
-        freetype
-        flatpak
-        openssl
-        fnm
-        ripgrep
-        tldr
-        unzip
-        btop
-        htop
-        bat
-        gparted
-        ranger
-        viewnior
-        cava
-        steam
-        steam-run
-        onlyoffice-bin
-        etcher
-        flameshot
-        vscodium
-        mangohud
-        protonup-ng
-        wine
-        python3Full
-        python.pkgs.pip
-        qemu
-        virt-manager
-        jetbrains.pycharm-community
-        discord
-        telegram-desktop
-        teams-for-linux
-        ncspot
-        wezterm
-        spotify
-        krita
-        kdeconnect
-        kate
-        thunderbird
-        conda
+    chromium
+    bat
+    coreutils
+    curl
+    exa 
+    clinfo
+    macchina
+    betterdiscord-installer
+    betterdiscordctl
+    freetype
+    fontconfig
+    flatpak
+    git
+    ripgrep
+    tcpdump
+    tree
+    unzip
+    winetricks
+    vim
+    wget
+    zip
+    zsh
+    file
+    openssl
+    fnm
+    unzip
+    btop
+    htop
+    partition-manager
+    clamav
+    ruby
+    alacritty
+    blueman
+    discord
+    ranger
+    viewnior
+    cava 
+    steam   
+    steam-run
+    onlyoffice-bin
+    etcher  
+    flameshot
+    vscodium
+    mangohud
+    protonup-ng
+    protontricks
+    wineWowPackages.unstableFull
+    qemu
+    zsh    
+    virt-manager
+    jetbrains.pycharm-community
+    telegram-desktop
+    teams-for-linux
+    ncspot 
+    wezterm 
+    kdeconnect
+    thunderbird
+    bash
+    lutris  
+    (lutris.override {
+        extraPkgs = pkgs: [
+            wineWowPackages.stable
+            winetricks
+            ];
+        }
+    )
+    ffmpeg-full
+    firefox-beta-bin
+    flameshot
+    obs-studio
+    obsidian
+    inkscape
+    krita
+    okular
+    rustup
+    spotify
+    tldr
+    tomb
+    xz
+    firefox
+    vlc
+    man
   ];
 
-  # Enable ZSH
   programs.zsh.enable = true;
-## Audio
-  # Enable sound with pipewire.
+  programs.adb.enable = true;
+
+  # Audio
   sound.enable = true;
-  hardware.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-    # If you want to use JACK applications, uncomment this
-    #jack.enable = true;
-
-    # use the example session manager (no others are packaged yet so this is enabled by default,
-    # no need to redefine it in your config for now)
-    #media-session.enable = true;
   };
 
-  ## Services
-  # Enable CUPS to print documents.
+  # Services
   services.printing.enable = true;
-
-  # Enable touchpad support (enabled default in most desktopManager).
-  # services.xserver.libinput.enable = true;
-
-  # Enable automatic login for the user.
   services.xserver.displayManager.autoLogin.enable = true;
   services.xserver.displayManager.autoLogin.user = "kennethp";
-
-  # Virtualization Services (libvirtd // virt-viewer)
   virtualisation.libvirtd.enable = true;
   services.flatpak.enable = true;
-
-  # Enable the OpenSSH daemon.
   services.openssh.enable = true;
 
-  ## User Configurations
-  # Define a user account. Don't forget to set a password with ‘passwd’.
+  # User Configurations
   users.users.kennethp = {
     isNormalUser = true;
     description = "Kenneth Perry";
     extraGroups = [ "networkmanager" "wheel" "kvm" "input" "disk" "libvirtd" ];
   };
-
-  # Set Default Shell to ZSH
   users.defaultUserShell = pkgs.zsh;
-
-  # Add zsh to /etc/shells
   environment.shells = with pkgs; [ zsh ];
 
   # Fonts
   fonts = {
-    fonts = with pkgs; [
+    packages = with pkgs; [
+      corefonts
+      terminus_font
+      dejavu_fonts
+      ubuntu_font_family
+      source-code-pro
+      source-sans-pro
+      source-serif-pro
+      roboto-mono
+      roboto
+      overpass
       noto-fonts
       nerdfonts
       noto-fonts-cjk
@@ -227,58 +206,56 @@
       source-han-sans
       source-han-sans-japanese
       source-han-serif-japanese
+      fira-code-nerdfont
+      google-fonts
     ];
     fontconfig = {
       enable = true;
       defaultFonts = {
-              monospace = [ "Meslo LG M Regular Nerd Font Complete Mono" ];
-              serif = [ "Noto Serif" "Source Han Serif" ];
-              sansSerif = [ "Noto Sans" "Source Han Sans" ];
+        monospace = [ "CaskaydiaCove Nerd Font Mono, Regular" ];
+        serif = [ "CaskaydiaCove Nerd Font, Regular" ];
+        sansSerif = [ "CaskaydiaCove Nerd Font Propo, Regular" ];
       };
     };
   };
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
+
+  # Programs Config
   programs.mtr.enable = true;
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = true;
   };
 
-  ## Gaming
-  # Steam Firewall Configurations
+  # Gaming
   programs.steam = {
-                enable = true;
-                remotePlay.openFirewall = true; # open ports in firewall for Remote Play
-                dedicatedServer.openFirewall = true; # open ports in firewall for Dedicated Server
-        };
-
-  ## Default Settings for Stateful Data pulled from...
-  system.stateVersion = "23.05";
-
-  ## Backups & Upgrades
-  # Backup system config
-  system.copySystemConfiguration = true;
-
-  # System Upgrades
-  system.autoUpgrade.enable = true;
-  system.autoUpgrade.allowReboot = true;
-
-  ## Garbage Collection
-  # Automatic Garbage Collection
-  nix.gc = {
-                automatic = true;
-                dates = "weekly";
-                options = "--delete-older-than 3d";
-          };
-
-  # Adding requirements for steam.
-  # Add Steam
+    enable = true;
+    remotePlay.openFirewall = true;
+    dedicatedServer.openFirewall = true;
+  };
   nixpkgs.config.allowUnfreePredicate = true;
   nix.settings = {
     substituters = ["https://nix-gaming.cachix.org"];
     trusted-public-keys = ["nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4="];
-                };
+  };
 
+  # Misc
+  system.stateVersion = "23.05";
+
+  # Backups & Upgrades
+  system.copySystemConfiguration = false;
+  system.autoUpgrade.enable = true;
+  system.autoUpgrade.allowReboot = true;
+
+  # Garbage Collection
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 3d";
+  };
+
+  # Security
+  security.sudo = {
+    enable = true;
+    wheelNeedsPassword = false;
+  };
 }
-

@@ -25,14 +25,14 @@
 
   fileSystems."/mnt/Games" =
     { device = "/dev/disk/by-uuid/304e90e3-da1c-4bc6-8ec3-3fd1c70938ce";
-      fsType = "btrfs";
+      fsType = "btrfs"; 
 #      options = [ ];
   };
 
-  fileSystems."/mnt/Elements" =
+  fileSystems."/mnt/Elements" = 
     { device = "/dev/disk/by-uuid/9ff98d32-f6ef-4226-ad80-04f14e3b842f";
       fsType = "btrfs";
-#      options = [ ];
+#      options = [ ]; 
   };
 
   fileSystems."/boot" =
@@ -49,7 +49,7 @@
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
-
+  
   # Reduce Swappiness
   boot.kernel.sysctl = { "vm.swappiness" = 0;};
 }
